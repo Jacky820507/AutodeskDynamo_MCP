@@ -94,7 +94,7 @@ flowchart TD
 - **腳本庫優先原則 (Library-First Pattern)**：在開始任何任務前，**必須主動**查詢 `DynamoScripts/` 腳本庫。
 - **自動預檢 (Auto-Precheck)**：必須先執行 `analyze_workspace` 確認環境狀態。
 - **規格驅動 (SDD)**：重大變更前應先更新 `domain/` 中的 MD 文件。
-- **文件同步義務**：更新 `README.md` 時，**必須同步更新** `README_EN.md`。
+- **語言政策（使用者 2026-07-08 拍板）**：繁體中文文件是唯一真相源 (SSOT)。英文只維護 `README_EN.md`（更新 `README.md` 時**必須同步**它）；其餘 `*_EN.md` 已標記為凍結快照，**禁止**再逐檔翻譯或同步，新知識文件一律只寫中文。
 
 ### 📂 腳本與知識組織規範
 
@@ -142,6 +142,20 @@ flowchart TD
 
 ---
 
+## 🎓 Dynamo 顧問知識庫 (`domain/expertise/`)
+
+> 處理**任何 Dynamo 領域問題**（不限本橋接工具）時的知識入口：先讀 [consultant_playbook.md](domain/expertise/consultant_playbook.md) 定位問題層級（L0 橋接～L6 環境共七層），再按其路由查專門文件。
+
+| 情境 | 直接查 |
+|:---|:---|
+| 有警告訊息/明確症狀 | [failure_signatures.md](domain/expertise/failure_signatures.md)（症狀→原因→修法，查表優先） |
+| 結果數量/清單結構不對（沉默錯誤） | [lists_lacing_levels.md](domain/expertise/lists_lacing_levels.md) |
+| Python 節點問題、引擎差異 | [python_engines.md](domain/expertise/python_engines.md) |
+| 只在 Revit 內出錯（元素消失/單位/交易） | [revit_integration.md](domain/expertise/revit_integration.md) |
+| 版本差異、套件選型 | [version_landscape.md](domain/expertise/version_landscape.md) |
+
+---
+
 ## 🛡️ 自我審查清單 (Pre-Flight Checklist)
 
 ### 通用檢查 (所有任務)
@@ -174,7 +188,7 @@ flowchart TD
 
 ---
 
-## 📌 當前三大不可違背鐵律
+## 📌 當前四大不可違背鐵律
 
 1. **Memory Bank 優先**：每次對話開始必須讀取 `memory-bank/` 文件。
 2. **雙軌選擇**：根據場景選擇 Code Block 或原生節點，詳見 [決策流程](memory-bank/lessons/node-creation.md)。

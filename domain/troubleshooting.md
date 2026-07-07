@@ -1,12 +1,14 @@
 ---
 description: Dynamo MCP 故障排除標準操作程序 (SOP)
-version: 1.0
-last_updated: 2026-01-11
+version: 1.1
+last_updated: 2026-07-08
 ---
 
 # Dynamo MCP 故障排除 SOP
 
 > **目的**：提供結構化的故障診斷與修復流程，確保 AI 與使用者能快速解決連線與操作問題。
+>
+> **範圍**：本檔只涵蓋**橋接層 (L0)**——連線、Session、指令傳遞。若橋接正常但 Dynamo 圖本身出問題（結果數量不對、Python 節點報錯、Revit 元素行為怪異…），請改查 [`expertise/consultant_playbook.md`](expertise/consultant_playbook.md) 與 [`expertise/failure_signatures.md`](expertise/failure_signatures.md)。
 
 ---
 
@@ -99,7 +101,7 @@ THEN 判定為幽靈連線
 ### 預防措施
 - 每次對話開始時，強制執行 [`startup_checklist.md`](startup_checklist.md)
 - 若 Dynamo 視窗被重開，**必須**引導使用者執行完整修復流程
-- 關閉 Dynamo 前，建議先執行 `StopMCPServer`
+- 關閉 Dynamo 前，建議先透過 `BIM Assistant` 選單斷開連線
 
 ---
 
@@ -134,7 +136,7 @@ tasklist | findstr /i "DynamoSandbox Revit"
 2. 關閉所有 Dynamo 與 Revit 視窗
 3. 工作管理員 → 強制結束所有 Dynamo/Revit 程序
 4. 重新啟動 Dynamo
-5. 放置 StartMCPServer 節點
+5. 透過選單 `BIM Assistant` → `Connect to MCP Server` 建立連線（**禁止**要求使用者放置 StartMCPServer 節點，見 GEMINI.md 鐵律 #4）
 6. 執行 analyze_workspace 驗證
 ```
 
@@ -156,26 +158,25 @@ tasklist | findstr /i "DynamoSandbox Revit"
 
 ### 常見原因
 
-#### 1. 使用錯誤的節點名稱
-**錯誤範例**：
+#### 1. 節點名稱或參數格式錯誤（雙軌制）
+本專案支援兩種創建軌道（詳見 [`node_creation_strategy.md`](node_creation_strategy.md)）：
+
+**軌道 B（原生節點）**——名稱需存在於節點庫，有 Overload 的節點要指明或給足參數：
 ```json
-{"name": "Point.ByCoordinates"}  // ❌ 無法直接創建
+{"name": "Point.ByCoordinates", "overload": "3D", "params": {"x": 0, "y": 0, "z": 100}}
 ```
 
-**正確方法**：
+**軌道 A（Code Block，降級/複雜邏輯用）**——名稱固定 `"Number"`，代碼放 `value` 且以 `;` 結尾：
 ```json
-{
-  "name": "Number",
-  "value": "Point.ByCoordinates(0, 0, 0);"
-}
+{"name": "Number", "value": "Point.ByCoordinates(0, 0, 0);"}
 ```
 
-**參考文件**：[`GEMINI.md#經驗提煉`](../GEMINI.md#核心教訓-1code-block-是唯一可靠的節點創建方法)
+**常見錯誤**：軌道 B 的名稱拼錯或該節點不在庫中（先用 `search_nodes` 驗證）；Custom Node 用名稱創建不穩定，一律改用 GUID（見 [`../memory-bank/lessons/node-creation-guid.md`](../memory-bank/lessons/node-creation-guid.md)）。
 
-#### 2. 分散式節點 + 連線反模式
-**錯誤做法**：試圖創建多個 `Number` 節點並透過 `connectors` 連接
+#### 2. 創建失敗後不降級
+**錯誤做法**：軌道 B 反覆失敗仍重試相同指令
 
-**解決方案**：將所有參數內嵌於單一 Code Block 的 DesignScript 中
+**解決方案**：軌道 B 失敗 → 將同邏輯改寫為 DesignScript 走軌道 A（系統亦有自動降級機制）
 
 #### 3. DesignScript 語法錯誤
 **常見錯誤**：
@@ -195,19 +196,20 @@ tasklist | findstr /i "DynamoSandbox Revit"
 ```mermaid
 graph TD
     A[遇到問題] --> B{能否連線?}
-    B -->|NO| C[檢查 StartMCPServer 節點]
+    B -->|NO| C[檢查 BIM Assistant 選單連線狀態]
     B -->|YES| D{操作有反應?}
     D -->|NO| E[幽靈連線檢測]
     D -->|YES| F{結果正確?}
-    F -->|NO| G[檢查節點創建方法]
+    F -->|NO| G{是橋接指令問題還是圖本身問題?}
     F -->|YES| H[正常運作]
     
-    C --> I{已放置?}
-    I -->|NO| J[放置節點]
-    I -->|YES| K[強制重啟監聽器]
+    C --> I{已勾選 Connect?}
+    I -->|NO| J[勾選 Connect to MCP Server]
+    I -->|YES| K[取消勾選後重新勾選-強制重啟連線]
     
     E --> L[執行幽靈連線修復 SOP]
-    G --> M[參考 GEMINI.md 經驗提煉]
+    G -->|指令/節點創建| M[參考 node_creation_strategy.md]
+    G -->|圖邏輯/Dynamo本身| N[參考 expertise/failure_signatures.md]
 ```
 
 ---
@@ -216,8 +218,9 @@ graph TD
 
 - **啟動檢查**：[`startup_checklist.md`](startup_checklist.md)
 - **快速參考**：[`QUICK_REFERENCE.md`](../QUICK_REFERENCE.md)
-- **節點創建規範**：[`GEMINI.md#經驗提煉`](../GEMINI.md)
-- **技術實作**：`DynamoViewExtension/src/SimpleHttpServer.cs`
+- **節點創建規範**：[`node_creation_strategy.md`](node_creation_strategy.md)
+- **Dynamo 領域問題（非橋接）**：[`expertise/consultant_playbook.md`](expertise/consultant_playbook.md)
+- **技術實作**：`DynamoViewExtension/src/GraphHandler.cs`、`WebSocketClient.cs`
 
 ---
 

@@ -4,7 +4,10 @@ version: "1.0"
 last_update: "2026-01-24"
 applies_to: ["GEMINI.md", "server.py", "GraphHandler.cs"]
 language: "en"
+status: "frozen-snapshot"
 ---
+
+> ⚠️ **FROZEN SNAPSHOT (2026-07-08)** — This English version is no longer synchronized. The Traditional Chinese version [`node_connection_workflow.md`](node_connection_workflow.md) is the single source of truth (SSOT). Per project language policy in GEMINI.md, only `README_EN.md` is maintained in English. Do NOT update this file to "re-sync" it.
 
 # Dynamo Node Connection Workflow Guide
 

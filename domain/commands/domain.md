@@ -102,7 +102,7 @@ applies_to: ["server.py", "GraphHandler.cs"]
    - 描述性名稱
    - 例：`python_script_automation.md`
 
-3. **雙語同步**：若為重要 SOP，需同時建立 `*_EN.md` 版本
+3. **語言政策（使用者 2026-07-08 拍板）**：SOP 一律**只寫繁體中文**，中文是唯一真相源。**禁止**建立 `*_EN.md` 版本（既有 `*_EN.md` 為凍結快照，不再同步）。詳見 GEMINI.md「核心行為義務」。
 
 ---
 
@@ -112,11 +112,9 @@ applies_to: ["server.py", "GraphHandler.cs"]
 
 **AI 執行**：
 1. 建立 `domain/python_script_automation.md`
-2. 建立 `domain/python_script_automation_EN.md`
 
 **回報**：
 ```
 ✅ 已建立 SOP：Python Script 節點自動化
-   📁 中文版：domain/python_script_automation.md
-   📁 英文版：domain/python_script_automation_EN.md
+   📁 domain/python_script_automation.md
 ```

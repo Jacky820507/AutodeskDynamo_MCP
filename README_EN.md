@@ -117,6 +117,7 @@ This project provides an AI automation interface through **Model Context Protoco
 **Universal Documentation** (for all AI Agents):
 - 📘 [Quick Start Guide](docs/ai-guide/quick-start.md) - Complete guide for AI to operate Dynamo
 - 📘 [Templates Reference](docs/ai-guide/templates.md) - 7 ready-to-use JSON templates
+- 🎓 [Dynamo Consultant Knowledge Pack](domain/expertise/consultant_playbook.md) - Layered diagnosis playbook & failure-signature library for any Dynamo problem (not limited to this bridge; in Traditional Chinese)
 
 **Technical Documentation** (in-depth details):
 - 📋 [Node Creation Strategy](domain/node_creation_strategy.md)

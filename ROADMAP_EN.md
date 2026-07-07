@@ -1,6 +1,8 @@
 # 🗺️ Autodesk Dynamo MCP - Development Roadmap
 
 > **Language:** [繁體中文](ROADMAP.md) | [English](ROADMAP_EN.md)
+>
+> ⚠️ **FROZEN SNAPSHOT (2026-07-08)** — This English version is no longer synchronized. [`ROADMAP.md`](ROADMAP.md) (Traditional Chinese) is the single source of truth. Per project language policy in GEMINI.md, only `README_EN.md` is maintained in English.
 
 This document outlines the future development direction and plans for the Autodesk Dynamo MCP Integration Project.
 

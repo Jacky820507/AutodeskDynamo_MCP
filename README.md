@@ -117,6 +117,7 @@ graph TD
 **通用文檔**（適用所有 AI Agent）：
 - 📘 [快速開始指南](docs/ai-guide/quick-start.md) - AI 操作 Dynamo 的完整指引
 - 📘 [模板參考](docs/ai-guide/templates.md) - 7 個即用 JSON 模板說明
+- 🎓 [Dynamo 顧問知識庫](domain/expertise/consultant_playbook.md) - 任何 Dynamo 問題的分層診斷手冊與故障特徵庫（不限本橋接工具）
 
 **技術文檔**（深入細節）：
 - 📋 [節點創建策略](domain/node_creation_strategy.md)
