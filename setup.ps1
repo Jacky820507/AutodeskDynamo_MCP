@@ -10,7 +10,12 @@ Write-Host "══════════════════════�
 # 1. 檢查 Python 環境
 Write-Host "`n[1/4] Checking Python environment..." -ForegroundColor Yellow
 if (!(Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Error "Python not found. Please install Python 3.10+."
+    Write-Host "══════════════════════════════════════════════════════════════" -ForegroundColor Red
+    Write-Host "❌ Python not found. Please install Python 3.10+." -ForegroundColor Red
+    Write-Host "If you have installed Python, please check 'App Execution Aliases' in Windows Settings"
+    Write-Host "and disable the 'Python' and 'Python3' shortcuts."
+    Write-Host "══════════════════════════════════════════════════════════════" -ForegroundColor Red
+    exit 1
 }
 Write-Host "   - Installing dependencies (websockets)..."
 pip install -r requirements.txt --quiet

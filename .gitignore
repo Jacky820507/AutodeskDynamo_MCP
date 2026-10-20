@@ -59,3 +59,5 @@ TestResults/
 image/*
 !image/.gitignore
 tests/
+node_modules/.cache/
+bridge/node/startup_log.txt

@@ -12,7 +12,8 @@
 | v3.2 | 2026-02-05 | ✅ 已發布 |
 | v3.3 | 2026-02-13 | ✅ 已發布 (System Stability Verified) |
 | v3.4 | 2026-02-19 | ✅ 已發布 (Enhanced Analysis & Visualization) |
-| v3.5 | 2026-02-?? | 🚧 進行中 (Node Grouping Support) |
+| v3.5 | 2026-03-02 | ✅ 已發布 (UI Enhancement & Startup Fix) |
+| v3.6 | 2026-04-27 | ✅ 已完成 (Python Path Config & Error Guidance) |
 
 ---
 

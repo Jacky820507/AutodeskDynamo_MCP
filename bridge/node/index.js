@@ -21,6 +21,22 @@ const WebSocket = require("ws");
 const { spawn } = require("child_process");
 const path = require("path");
 const net = require("net");
+const fs = require("fs");
+
+// 載入配置
+function loadConfig() {
+    try {
+        const configPath = path.join(__dirname, "..", "..", "mcp_config.json");
+        if (fs.existsSync(configPath)) {
+            return JSON.parse(fs.readFileSync(configPath, "utf8"));
+        }
+    } catch (error) {
+        console.error(`[MCP Bridge] Failed to load mcp_config.json: ${error.message}`);
+    }
+    return {};
+}
+
+const config = loadConfig();
 
 // 配置
 const PYTHON_WS_URL = "ws://127.0.0.1:65296"; // MCP Bridge port
@@ -214,49 +230,68 @@ function isPortAvailable(port) {
  */
 async function startPythonServer() {
     console.error("[MCP Bridge] Checking Python server status...");
-    
+
     // 檢查埠口是否已被佔用
     const portAvailable = await isPortAvailable(65296);
-    
+
     if (!portAvailable) {
         console.error("[MCP Bridge] ✅ Port 65296 already in use, assuming server.py is running");
         return true;
     }
-    
+
     console.error("[MCP Bridge] Port 65296 is available, starting Python server...");
-    
+
     // 啟動 Python server
     const launcherPath = path.join(__dirname, '..', 'launcher.py');
     
-    pythonProcess = spawn('python', [launcherPath], {
+    // 優先順序：Config > Environment Variable > Default
+    let pythonCmd = config.server?.python_path || process.env.PYTHON_PATH || 'python';
+    
+    console.error(`[MCP Bridge] Using Python command: "${pythonCmd}"`);
+
+    pythonProcess = spawn(pythonCmd, [launcherPath], {
         cwd: path.join(__dirname, '..', '..'),
         stdio: ['ignore', 'pipe', 'pipe']
     });
-    
+
     // 將 Python 輸出重定向到 stderr
     pythonProcess.stdout.on('data', (data) => {
         console.error(`[Python] ${data.toString().trim()}`);
     });
-    
+
     pythonProcess.stderr.on('data', (data) => {
         console.error(`[Python] ${data.toString().trim()}`);
     });
-    
+
     pythonProcess.on('error', (error) => {
         console.error(`[MCP Bridge] ❌ Failed to start Python server: ${error.message}`);
     });
-    
+
     pythonProcess.on('exit', (code) => {
         console.error(`[MCP Bridge] Python server exited with code ${code}`);
+        
+        if (code === 9009) {
+            console.error("══════════════════════════════════════════════════════════════");
+            console.error("❌ 錯誤: 找不到 Python 執行檔 (Error 9009)");
+            console.error("這通常是因為 Python 未安裝或未加入 PATH。");
+            console.error("或者是因為 Windows 的 'Python Execution Alias' 捷徑干擾。");
+            console.error("");
+            console.error("修復建議:");
+            console.error("1. 請至 Windows 設定 -> 應用程式 -> 進階應用程式設定 -> 應用程式執行別名");
+            console.error("   將 'Python' 與 'Python3' 關閉。");
+            console.error("2. 或者在 mcp_config.json 中指定完整的 python_path。");
+            console.error("══════════════════════════════════════════════════════════════");
+        }
+        
         pythonProcess = null;
     });
-    
+
     console.error(`[MCP Bridge] ✅ Python server started (PID: ${pythonProcess.pid})`);
-    
+
     // 等待 Python server 啟動
     console.error("[MCP Bridge] Waiting for Python server to be ready...");
     await new Promise(resolve => setTimeout(resolve, PYTHON_STARTUP_TIMEOUT));
-    
+
     return true;
 }
 
@@ -272,7 +307,7 @@ async function main() {
     try {
         // 啟動 Python Server
         await startPythonServer();
-        
+
         // 連接至 Python WebSocket Manager
         await connectToPython();
 
