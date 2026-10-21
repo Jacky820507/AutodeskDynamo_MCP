@@ -1337,7 +1337,9 @@ class MCPBridgeServer:
                     await websocket.send(json.dumps(response, ensure_ascii=False))
 
                 except Exception as e:
+                    import traceback
                     log(f"[MCP Bridge] Request error: {e}")
+                    log(f"[MCP Bridge] Traceback:\n{traceback.format_exc()}")
                     # JSON-RPC 2.0 錯誤格式
                     error_response = {
                         "jsonrpc": "2.0",
@@ -1359,7 +1361,7 @@ class MCPBridgeServer:
         tools = [
             {
                 "name": "execute_dynamo_instructions",
-                "description": "在 Dynamo 中執行節點創建指令。支援 dryRun 模式預覽、clientId 識別客戶端、expectedVersion 避免多客戶端衝突。",
+                "description": "1. 執行 Dynamo 指令：在 Dynamo 中執行節點創建指令。支援 dryRun 模式、以及版本控制衝突檢查。",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -1369,19 +1371,23 @@ class MCPBridgeServer:
                         },
                         "dryRun": {
                             "type": "boolean",
-                            "description": "若為 true，僅回傳預覽報告（包含節點清單、連線、潛在警告）而不實際執行。預設為 false。"
+                            "description": "僅預覽而不實際執行。"
                         },
                         "clientId": {
                             "type": "string",
-                            "description": "客戶端識別碼（如 'antigravity', 'gemini-cli', 'claude'）。用於追蹤誰執行了修改。"
+                            "description": "客戶端識別碼。"
                         },
                         "expectedVersion": {
                             "type": "integer",
-                            "description": "預期的工作區版本號。若不匹配則拒絕執行並回傳 version_conflict。透過 get_workspace_version 取得當前版本。"
+                            "description": "預期的工作區版本號。"
                         },
                         "sessionId": {
                             "type": "string",
-                            "description": "選用。指定要執行的會話 ID。若未指定則使用最新連線。"
+                            "description": "指定的會話 ID。"
+                        },
+                        "section": {
+                            "type": "string",
+                            "description": "留空白取得全部摘要，或指定特定段落名稱"
                         }
                     },
                     "required": ["instructions"]
@@ -1390,13 +1396,13 @@ class MCPBridgeServer:
             },
             {
                 "name": "analyze_workspace",
-                "description": "取得 Dynamo 工作區中所有節點的當前狀態。",
+                "description": "2. 分析工作區：取得 Dynamo 工作區中所有節點的當前狀態。",
                 "inputSchema": {"type": "object", "properties": {}},
                 "readOnlyHint": True
             },
             {
                 "name": "get_graph_status",
-                "description": "取得工作區圖表完整狀態 JSON。",
+                "description": "3. 取得圖表狀態：取得目前工作區圖表的完整 JSON 原始資料。",
                 "inputSchema": {"type": "object", "properties": {}},
                 "readOnlyHint": True
             },
@@ -1482,7 +1488,7 @@ class MCPBridgeServer:
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "搜尋關鍵字（例如 'Room', 'Solid', 'Point'）"
+                            "description": "關鍵字內容（如：'Room', 'Point'）"
                         }
                     },
                     "required": ["query"]
@@ -1490,41 +1496,127 @@ class MCPBridgeServer:
                 "readOnlyHint": True
             },
             {
-                "name": "get_mcp_guidelines",
-                "description": "取得規範內容。",
+                "name": "create_group",
+                "description": "5. 建立群組：為指定的節點建立一個群組框，可設定標題與顏色。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "nodeIds": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "節點 ID 列表"
+                        },
+                        "title": {
+                            "type": "string",
+                            "description": "群組標題",
+                            "default": "New Group"
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "群組描述",
+                            "default": ""
+                        },
+                        "color": {
+                            "type": "string",
+                            "description": "群組顏色 (Hex)",
+                            "default": "#FFC1D5E0"
+                        },
+                        "sessionId": {
+                            "type": "string",
+                            "description": "選用。指定要執行的 Session ID"
+                        },
+                        "validateNodeIds": {
+                            "type": "boolean",
+                            "description": "是否先驗證 nodeIds 是否存在於工作區，預設 true",
+                            "default": True
+                        },
+                        "retryCount": {
+                            "type": "integer",
+                            "description": "失敗時重試次數，預設 2",
+                            "default": 2
+                        }
+                    },
+                    "required": ["nodeIds"]
+                },
+                "destructiveHint": True
+            },
+            {
+                "name": "auto_group",
+                "description": "6. 智慧自動分組：自動分析工作區並依功能 (輸入/運算/輸出) 建立顏色分區。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {"type": "string", "enum": ["auto", "custom"], "default": "auto"}
+                    }
+                },
+                "destructiveHint": True
+            },
+            {
+                "name": "get_memory_bank_summary",
+                "description": "7. 讀取記憶核心：取得 Memory Bank 摘要（系統模式、教訓庫），建議新對話開始時使用。",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "section": {
+                            "type": "string",
+                            "enum": ["all", "activeContext", "lessons", "systemPatterns", "progress"],
+                            "default": "all"
+                        }
+                    }
+                },
+                "readOnlyHint": True
+            },
+            {
+                "name": "reload_memory_bank",
+                "description": "8. 重載記憶核心：手動重新讀取本地 memory-bank/ 目錄下的最新內容。",
                 "inputSchema": {"type": "object", "properties": {}},
                 "readOnlyHint": True
             },
             {
-                "name": "get_script_library",
-                "description": "取得腳本庫清單。",
+                "name": "clear_workspace",
+                "description": "9. 清除工作區：刪除目前工作區內的所有節點與連線。",
+                "inputSchema": {"type": "object", "properties": {}},
+                "destructiveHint": True
+            },
+            {
+                "name": "list_sessions",
+                "description": "10. 列出連線：查看目前所有已連線的 Dynamo 執行實例。",
                 "inputSchema": {"type": "object", "properties": {}},
                 "readOnlyHint": True
             },
             {
                 "name": "run_autotest",
-                "description": "執行專案自動化測試 (test_roadmap_features.py)。驗證 Dynamo 節點放置、Python 注入、外掛支援與幾何運算功能。",
+                "description": "11. 執行自動測試：驗證系統核心功能與通訊狀態。",
+                "inputSchema": {"type": "object", "properties": {}},
+                "readOnlyHint": True
+            },
+            {
+                "name": "get_mcp_guidelines",
+                "description": "12. 取得規範範例：取得 GEMINI.md 與 QUICK_REFERENCE.md 的內容。",
+                "inputSchema": {"type": "object", "properties": {}},
+                "readOnlyHint": True
+            },
+            {
+                "name": "get_script_library",
+                "description": "13. 取得腳本庫：列出 DynamoScripts/ 目錄下可供複用的 JSON 圖表定義。",
+                "inputSchema": {"type": "object", "properties": {}},
+                "readOnlyHint": True
+            },
+            {
+                "name": "read_dynamo_resource",
+                "description": "14. 讀取資源：讀取選取節點、錯誤節點或節點詳細內容。",
                 "inputSchema": {
                     "type": "object",
-                    "properties": {}
+                    "properties": {
+                        "resourceType": {"type": "string", "enum": ["nodes", "connectors", "selection", "errors"]}
+                    },
+                    "required": ["resourceType"]
                 },
                 "readOnlyHint": True
             },
             {
-                "name": "list_sessions",
-                "description": "列出所有當前活動中的 Dynamo WebSocket 會話及其詳細資訊。",
-                "inputSchema": {"type": "object", "properties": {}},
-                "readOnlyHint": True
-            },
-            {
-                "name": "get_server_stats",
-                "description": "取得 Bridge Server 的運行數據與效能統計。",
-                "inputSchema": {"type": "object", "properties": {}},
-                "readOnlyHint": True
-            },
-            {
                 "name": "generate_workspace_mermaid",
-                "description": "分析當前 Dynamo 工作區邏輯，輸出 Mermaid 流程圖、邏輯摘要與 Markdown 報告。支援離線 snapshot 驗證。",
+                "description": "15. 產生流程圖：分析當前 Dynamo 工作區邏輯，輸出 Mermaid 流程圖、邏輯摘要與 Markdown 報告。支援離線 snapshot 驗證。",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -1563,152 +1655,8 @@ class MCPBridgeServer:
                 "readOnlyHint": False
             },
             {
-                "name": "create_group",
-                "description": "將節點群組化 (Group Nodes)。能夠為指定的節點創建一個帶標題和描述的群組。",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "nodeIds": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "要分組的節點 ID 清單"
-                        },
-                        "title": {
-                            "type": "string",
-                            "description": "群組標題",
-                            "default": "New Group"
-                        },
-                        "description": {
-                            "type": "string",
-                            "description": "群組描述",
-                            "default": ""
-                        },
-                        "color": {
-                            "type": "string",
-                            "description": "群組顏色 (Hex)",
-                            "default": "#FFC1D5E0"
-                        },
-                        "sessionId": {
-                            "type": "string",
-                            "description": "選用。指定要執行的 Session ID"
-                        },
-                        "validateNodeIds": {
-                            "type": "boolean",
-                            "description": "是否先驗證 nodeIds 是否存在於工作區，預設 true",
-                            "default": True
-                        },
-                        "retryCount": {
-                            "type": "integer",
-                            "description": "失敗時重試次數，預設 2",
-                            "default": 2
-                        }
-                    },
-                    "required": ["nodeIds"]
-                },
-                "destructiveHint": True
-            },
-            {
-                "name": "auto_group",
-                "description": "智慧自動分組 (Auto Group)。自動分析工作區節點，依功能分成輸入/運算/輸出三組並建立色彩群組。支援自訂顏色、描述文字與分組方式。",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "mode": {
-                            "type": "string",
-                            "enum": ["auto", "custom"],
-                            "description": "分組模式：auto=自動依節點類型分類（預設）；custom=手動指定各群組節點",
-                            "default": "auto"
-                        },
-                        "input_title": {"type": "string", "description": "輸入群組標題", "default": "輸入參數"},
-                        "input_desc": {"type": "string", "description": "輸入群組說明文字", "default": "使用者可調整的輸入參數，控制腳本行為"},
-                        "input_color": {"type": "string", "description": "輸入群組顏色 (Hex ARGB)", "default": "#FFE91E8A"},
-                        "compute_title": {"type": "string", "description": "運算群組標題", "default": "核心運算"},
-                        "compute_desc": {"type": "string", "description": "運算群組說明文字", "default": "資料處理與幾何運算邏輯"},
-                        "compute_color": {"type": "string", "description": "運算群組顏色 (Hex ARGB)", "default": "#FF4169E1"},
-                        "output_title": {"type": "string", "description": "輸出群組標題", "default": "結果輸出"},
-                        "output_desc": {"type": "string", "description": "輸出群組說明文字", "default": "觀察與驗證運算結果"},
-                        "output_color": {"type": "string", "description": "輸出群組顏色 (Hex ARGB)", "default": "#FF228B22"},
-                        "groups": {
-                            "type": "array",
-                            "description": "[custom 模式] 自訂群組清單",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "title": {"type": "string"},
-                                    "description": {"type": "string"},
-                                    "color": {"type": "string"},
-                                    "nodeIds": {"type": "array", "items": {"type": "string"}}
-                                }
-                            }
-                        }
-                    }
-                },
-                "destructiveHint": True
-            },
-            # === 通用工具橋接層 (Universal Tool Bridge) ===
-            {
-                "name": "read_dynamo_resource",
-                "description": "讀取 Dynamo 工作區資源。適用於不支援 MCP resources/read 的客戶端（如 Gemini CLI、Cursor）。",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "resourceType": {
-                            "type": "string",
-                            "enum": ["nodes", "connectors", "selection", "errors"],
-                            "description": "資源類型：nodes=所有節點, connectors=所有連線, selection=選取的節點, errors=錯誤節點"
-                        },
-                        "nodeId": {
-                            "type": "string",
-                            "description": "選用。取得單一節點詳情時使用（需配合 resourceType='nodes'）"
-                        },
-                        "sessionId": {
-                            "type": "string",
-                            "description": "選用。指定 Session ID"
-                        }
-                    },
-                    "required": ["resourceType"]
-                },
-                "readOnlyHint": True
-            },
-            {
-                "name": "get_workspace_version",
-                "description": "取得當前工作區的版本號與最後寫入者資訊。用於實作樂觀鎖，避免多客戶端衝突。",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "sessionId": {
-                            "type": "string",
-                            "description": "選用。指定 Session ID"
-                        }
-                    }
-                },
-                "readOnlyHint": True
-            },
-            # === Memory Bank 快取管理 ===
-            {
-                "name": "get_memory_bank_summary",
-                "description": "取得 Memory Bank 快取摘要（系統模式、已知坑、近期決策、教訓庫）。**建議每次新對話開始時先呼叫**，避免重複踩坑。",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "section": {
-                            "type": "string",
-                            "enum": ["all", "activeContext", "lessons", "systemPatterns", "progress"],
-                            "description": "選用。指定要取得的區段：all=完整摘要（預設）, activeContext=當前狀態, lessons=教訓庫, systemPatterns=系統模式, progress=進度追蹤"
-                        }
-                    }
-                },
-                "readOnlyHint": True
-            },
-            {
-                "name": "reload_memory_bank",
-                "description": "手動重新載入 Memory Bank（當 memory-bank/ 資料夾內容有更新時使用）。",
-                "inputSchema": {"type": "object", "properties": {}},
-                "readOnlyHint": True
-            },
-            {
                 "name": "refresh_addon_guid_mapping",
-                "description": "從當前工作區節點資源與既有知識庫更新外掛 GUID 映射表。可用於自動擴充 domain/addon_guid_mapping.json。",
+                "description": "16. 更新外掛對應：從當前工作區節點資源與既有知識庫更新外掛 GUID 映射表。可用於自動擴充 domain/addon_guid_mapping.json。",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -1729,6 +1677,12 @@ class MCPBridgeServer:
                 },
                 "readOnlyHint": False
             },
+            {
+                "name": "get_server_stats",
+                "description": "17. 取得伺服器統計：取得 Bridge Server 的運行數據與效能統計。",
+                "inputSchema": {"type": "object", "properties": {}},
+                "readOnlyHint": True
+            }
         ]
         return tools
 

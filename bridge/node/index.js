@@ -359,6 +359,20 @@ function spawnPythonServer() {
 
     pythonProcess.on('exit', (code) => {
         console.error(`[MCP Bridge] Python server exited with code ${code}`);
+        
+        if (code === 9009) {
+            console.error("══════════════════════════════════════════════════════════════");
+            console.error("❌ 錯誤: 找不到 Python 執行檔 (Error 9009)");
+            console.error("這通常是因為 Python 未安裝或未加入 PATH。");
+            console.error("或者是因為 Windows 的 'Python Execution Alias' 捷徑干擾。");
+            console.error("");
+            console.error("修復建議:");
+            console.error("1. 請至 Windows 設定 -> 應用程式 -> 進階應用程式設定 -> 應用程式執行別名");
+            console.error("   將 'Python' 與 'Python3' 關閉。");
+            console.error("2. 或者在 mcp_config.json 中指定完整的 python_path。");
+            console.error("══════════════════════════════════════════════════════════════");
+        }
+        
         pythonProcess = null;
     });
 

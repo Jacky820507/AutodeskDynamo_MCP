@@ -1,6 +1,6 @@
 ---
 name: dynamo-automation
-description: Specialized workflow for automating Autodesk Dynamo graph creation through MCP. Use when the user requests (1) Creating or placing Dynamo nodes (native/packages/custom), (2) Injecting Python scripts into Dynamo nodes, (3) Establishing node connections, (4) Analyzing workspace state, (5) Troubleshooting MCP integration (ghost connections, UI sync issues), (6) Working with Dynamo script libraries.
+description: "透過 MCP 自動建立 Autodesk Dynamo 圖表的專用工作流程。當使用者要求（1）建立或放置 Dynamo 節點（原生/套件/自訂）、（2）將 Python 腳本注入 Dynamo 節點、（3）建立節點連線、（4）分析工作區狀態、（5）排解 MCP 整合問題（幽靈連線、UI 同步問題），或（6）處理 Dynamo 腳本函式庫時使用。"
 ---
 
 # Dynamo Automation Skill
